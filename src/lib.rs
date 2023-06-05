@@ -64,7 +64,7 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::form_urlencoded;
 
-pub fn wbi_sign(mut params: HashMap<String, String>, mixin_key: &str) -> HashMap<String, String> {
+pub fn wbi_sign_encode(mut params: HashMap<String, String>, mixin_key: &str) -> String {
     let curr_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
@@ -82,9 +82,13 @@ pub fn wbi_sign(mut params: HashMap<String, String>, mixin_key: &str) -> HashMap
         .extend_pairs(params_sorted.iter())
         .finish(); // 序列化参数
     let wbi_sign = format!("{:x}", compute(&(query + &mixin_key).as_bytes())); // 计算 w_rid
-    params_sorted
-        .into_iter()
-        .chain(std::iter::once(("w_rid".to_string(), wbi_sign)))
-        .collect() // 转换回HashMap<String, String>
+
+    form_urlencoded::Serializer::new(String::new())
+        .extend_pairs(
+            params_sorted
+                .into_iter()
+                .chain(std::iter::once(("w_rid".to_string(), wbi_sign))),
+        )
+        .finish()
 }
 // ---- ChatGPT 3.5 ----
