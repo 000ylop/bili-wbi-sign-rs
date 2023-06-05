@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.10.5"
+log = "0.4.18"
 md5 = "0.7.0"
 reqwest = "0.11.18"
 rkyv = "0.7.42"
