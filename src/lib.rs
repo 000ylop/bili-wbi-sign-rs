@@ -25,7 +25,7 @@ fn parse_wbi_url(url: &str) -> Option<&str> {
     Some(url.rsplit_once('/')?.1.split_once('.')?.0)
 }
 
-pub async fn get_wbi_keys(client: reqwest::Client) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn get_wbi_keys(client: &reqwest::Client) -> Result<String, Box<dyn std::error::Error>> {
     let resp = client
         .get("https://api.bilibili.com/x/web-interface/nav")
         .send()
@@ -42,7 +42,7 @@ pub async fn get_wbi_keys(client: reqwest::Client) -> Result<String, Box<dyn std
 
 #[cfg(blocking_req)]
 pub fn get_wbi_keys_blocking(
-    client: reqwest::blocking::Client,
+    client: &reqwest::blocking::Client,
 ) -> Result<(String, String), Box<dyn std::error::Error>> {
     let resp = client
         .get("https://api.bilibili.com/x/web-interface/nav")
