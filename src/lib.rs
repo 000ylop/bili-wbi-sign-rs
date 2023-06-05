@@ -1,4 +1,7 @@
+#![feature(string_remove_matches)]
+
 mod nav_resp;
+
 use crate::nav_resp::{Nav, WbiImg};
 
 const MIXIN_KEY_REORDER_MAP: [usize; 64] = [
@@ -54,21 +57,34 @@ pub fn get_wbi_keys_blocking(
     Ok(wbi_key)
 }
 
-/*
-def encWbi(params: dict, img_key: str, sub_key: str):
-    '为请求参数进行 wbi 签名'
-    mixin_key = getMixinKey(img_key + sub_key)
-    curr_time = round(time.time())
-    params['wts'] = curr_time                                   # 添加 wts 字段
-    params = dict(sorted(params.items()))                       # 按照 key 重排参数
-    # 过滤 value 中的 "!'()*" 字符
-    params = {
-        k : ''.join(filter(lambda chr: chr not in "!'()*", str(v)))
-        for k, v
-        in params.items()
-    }
-    query = urllib.parse.urlencode(params)                      # 序列化参数
-    wbi_sign = md5((query + mixin_key).encode()).hexdigest()    # 计算 w_rid
-    params['w_rid'] = wbi_sign
-    return params
-*/
+// ---- ChatGPT 3.5 ----
+use itertools::Itertools;
+use md5::compute;
+use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+use url::form_urlencoded;
+
+pub fn wbi_sign(mut params: HashMap<String, String>, mixin_key: &str) -> HashMap<String, String> {
+    let curr_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+    params.insert("wts".into(), curr_time.to_string()); // 添加 wts 字段
+    let params_sorted = params
+        .into_iter()
+        .sorted_by_key(|(k, _)| k.to_owned()) // 按照 key 重排参数
+        .map(|(k, mut v)| {
+            v.remove_matches(|ch| "!*()'".contains(ch));
+            (k, v)
+        })
+        .collect::<Vec<(String, String)>>(); // 过滤 value 中的 "!'()*" 字符
+    let query = form_urlencoded::Serializer::new(String::new())
+        .extend_pairs(params_sorted.iter())
+        .finish(); // 序列化参数
+    let wbi_sign = format!("{:x}", compute(&(query + &mixin_key).as_bytes())); // 计算 w_rid
+    params_sorted
+        .into_iter()
+        .chain(std::iter::once(("w_rid".to_string(), wbi_sign)))
+        .collect() // 转换回HashMap<String, String>
+}
+// ---- ChatGPT 3.5 ----
