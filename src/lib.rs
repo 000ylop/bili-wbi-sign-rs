@@ -84,11 +84,8 @@ pub fn wbi_sign_encode(mut params: HashMap<String, String>, mixin_key: &str) -> 
     let wbi_sign = format!("{:x}", compute(&(query + &mixin_key).as_bytes())); // 计算 w_rid
 
     form_urlencoded::Serializer::new(String::new())
-        .extend_pairs(
-            params_sorted
-                .into_iter()
-                .chain(std::iter::once(("w_rid".to_string(), wbi_sign))),
-        )
+        .extend_pairs(params_sorted.iter())
+        .extend_pairs(std::iter::once(("w_rid".to_string(), wbi_sign)))
         .finish()
 }
 // ---- ChatGPT 3.5 ----
