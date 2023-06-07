@@ -41,10 +41,10 @@ pub async fn get_wbi_keys(client: &reqwest::Client) -> Result<String, Box<dyn st
     Ok(wbi_key)
 }
 
-#[cfg(blocking_req)]
+#[cfg(feature = "blocking_req")]
 pub fn get_wbi_keys_blocking(
     client: &reqwest::blocking::Client,
-) -> Result<(String, String), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     let resp = client
         .get("https://api.bilibili.com/x/web-interface/nav")
         .send()?;
@@ -58,7 +58,7 @@ pub fn get_wbi_keys_blocking(
     Ok(wbi_key)
 }
 
-#[cfg(expires_time)]
+#[cfg(feature = "expires_time")]
 /// after such duration, mixin_key will expire.
 pub fn expires_after() -> Option<chrono::Duration> {
     use chrono::prelude::*;
