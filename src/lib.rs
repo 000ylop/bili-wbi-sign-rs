@@ -58,6 +58,22 @@ pub fn get_wbi_keys_blocking(
     Ok(wbi_key)
 }
 
+#[cfg(expires_time)]
+/// after such duration, mixin_key will expire.
+pub fn expires_after() -> Option<chrono::Duration> {
+    use chrono::prelude::*;
+    let utc = Utc::now().naive_utc();
+    let tz = FixedOffset::east_opt(8 * 3600)?;
+    let utc8_now = tz.from_utc_datetime(&utc);
+    let utc8_nextday = utc8_now
+        .date_naive()
+        .succ_opt()?
+        .and_hms_opt(0, 0, 0)?
+        .and_local_timezone(tz)
+        .single()?;
+    Some(utc8_nextday.signed_duration_since(utc8_now))
+}
+
 // ---- ChatGPT 3.5 ----
 use itertools::Itertools;
 use md5::compute;
@@ -89,7 +105,6 @@ pub fn wbi_sign_encode(
 
     params_sorted.push(("w_rid".into(), wbi_sign));
 
-    
     debug!("signed params: {params_sorted:?}");
     params_sorted
 }
