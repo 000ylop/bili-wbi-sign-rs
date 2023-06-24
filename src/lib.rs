@@ -40,8 +40,8 @@ pub enum Error {
 
 pub const WBI_URI: &str = "https://api.bilibili.com/x/web-interface/nav";
 
-pub fn parse_wbi_keys(resp: &str) -> Result<String, Error> {
-    let formed_result: Nav = serde_json::from_str(&resp)?;
+pub fn parse_wbi_keys(resp: &[u8]) -> Result<String, Error> {
+    let formed_result: Nav = serde_json::from_slice(&resp)?;
     let WbiImg { img_url, sub_url } = formed_result.data.wbi_img;
     let wbi_key = filename_in_url(&img_url).ok_or(Error::ParseError)?.to_owned()
         + filename_in_url(&sub_url).ok_or(Error::ParseError)?;
