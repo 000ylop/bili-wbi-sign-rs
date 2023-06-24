@@ -26,7 +26,17 @@ fn parse_wbi_url(url: &str) -> Option<&str> {
     Some(url.rsplit_once('/')?.1.split_once('.')?.0)
 }
 
-pub async fn get_wbi_keys(client: &reqwest::Client) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("request error: {0}")]
+    ReqError(#[from] reqwest::Error),
+    #[error("invalid wbi key uri")]
+    ParseError,
+    #[error("serde error: {0}")]
+    JsonError(#[from] serde_json::Error),
+}
+
+pub async fn get_wbi_keys(client: &reqwest::Client) -> Result<String, Error> {
     let resp = client
         .get("https://api.bilibili.com/x/web-interface/nav")
         .send()
@@ -34,17 +44,13 @@ pub async fn get_wbi_keys(client: &reqwest::Client) -> Result<String, Box<dyn st
     let result = resp.text().await?;
     let formed_result: Nav = serde_json::from_str(&result)?;
     let WbiImg { img_url, sub_url } = formed_result.data.wbi_img;
-    let wbi_key = parse_wbi_url(&img_url)
-        .ok_or("invalid wbi key url")?
-        .to_owned()
-        + parse_wbi_url(&sub_url).ok_or("invalid wbi key url")?;
+    let wbi_key = parse_wbi_url(&img_url).ok_or(Error::ParseError)?.to_owned()
+        + parse_wbi_url(&sub_url).ok_or(Error::ParseError)?;
     Ok(wbi_key)
 }
 
 #[cfg(feature = "blocking_req")]
-pub fn get_wbi_keys_blocking(
-    client: &reqwest::blocking::Client,
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+pub fn get_wbi_keys_blocking(client: &reqwest::blocking::Client) -> Result<String, Error> {
     let resp = client
         .get("https://api.bilibili.com/x/web-interface/nav")
         .send()?;
@@ -52,9 +58,9 @@ pub fn get_wbi_keys_blocking(
     let formed_result: Nav = serde_json::from_str(&result)?;
     let WbiImg { img_url, sub_url } = formed_result.data.wbi_img;
     let wbi_key = parse_wbi_url(&img_url)
-        .ok_or("invalid wbi key url")?
+        .ok_or(Error::ParseError)?
         .to_owned()
-        + parse_wbi_url(&sub_url).ok_or("invalid wbi key url")?;
+        + parse_wbi_url(&sub_url).ok_or(Error::ParseError)?;
     Ok(wbi_key)
 }
 
