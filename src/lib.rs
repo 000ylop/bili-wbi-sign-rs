@@ -1,9 +1,11 @@
 #![feature(string_remove_matches)]
 
-mod nav_resp;
-
-use crate::nav_resp::{Nav, WbiImg};
-use log::debug;
+mod types;
+use crate::types::{Nav, WbiImg};
+mod utils;
+pub use crate::utils::filename_in_url;
+mod sign;
+pub use sign::wbi_sign_encode;
 
 const MIXIN_KEY_REORDER_MAP: [usize; 64] = [
     46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29,
@@ -21,14 +23,6 @@ pub unsafe fn mixin_key(key: impl AsRef<[u8]>) -> String {
             .take(32)
             .collect(),
     )
-}
-
-/// ```rust
-/// use bili_wbi_sign_rs::filename_in_url;
-/// assert_eq!(filename_in_url("https://www.google.com/index.html"), Some("index"));
-/// ```
-pub fn filename_in_url(url: &str) -> Option<&str> {
-    Some(url.rsplit_once('/')?.1.split_once('.')?.0)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -67,39 +61,3 @@ pub fn expires_after() -> Option<chrono::Duration> {
         .single()?;
     Some(utc8_nextday.signed_duration_since(utc8_now))
 }
-
-// ---- ChatGPT 3.5 ----
-use itertools::Itertools;
-use md5::compute;
-use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
-use url::form_urlencoded;
-
-pub fn wbi_sign_encode(
-    mut params: HashMap<String, String>,
-    mixin_key: &str,
-) -> Vec<(String, String)> {
-    let curr_time = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs();
-    params.insert("wts".into(), curr_time.to_string()); // 添加 wts 字段
-    let mut params_sorted = params
-        .into_iter()
-        .sorted_by_key(|(k, _)| k.to_owned()) // 按照 key 重排参数
-        .map(|(k, mut v)| {
-            v.remove_matches(|ch| "!*()'".contains(ch));
-            (k, v)
-        })
-        .collect::<Vec<(String, String)>>(); // 过滤 value 中的 "!'()*" 字符
-    let query = form_urlencoded::Serializer::new(String::new())
-        .extend_pairs(params_sorted.iter())
-        .finish(); // 序列化参数
-    let wbi_sign = format!("{:x}", compute(&(query + &mixin_key).as_bytes())); // 计算 w_rid
-
-    params_sorted.push(("w_rid".into(), wbi_sign));
-
-    debug!("signed params: {params_sorted:?}");
-    params_sorted
-}
-// ---- ChatGPT 3.5 ----

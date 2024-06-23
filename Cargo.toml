@@ -2,13 +2,16 @@
 name = "bili-wbi-sign-rs"
 version = "0.1.0"
 edition = "2021"
+authors = ["poly000"]
+license = "MIT"
+repository = "https://github.com/000ylop/bili-wbi-sign-rs/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 chrono = { version = "0.4.38", optional = true }
 itertools = "0.13.0"
-log = "0.4.21"
+log = { version = "0.4.21", optional = true }
 md5 = "0.7.0"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
@@ -17,4 +20,5 @@ url = "2.5.2"
 
 [features]
 expires_time = ["dep:chrono"]
-default = ["expires_time"]
+log = ["dep:log"]
+default = ["expires_time", "log"]
