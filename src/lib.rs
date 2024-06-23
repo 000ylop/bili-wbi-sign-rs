@@ -12,7 +12,8 @@ const MIXIN_KEY_REORDER_MAP: [usize; 64] = [
 ];
 
 /// SAFETY: key should be valid ASCII string
-pub unsafe fn mixin_key(key: &[u8]) -> String {
+pub unsafe fn mixin_key(key: impl AsRef<[u8]>) -> String {
+    let key = key.as_ref();
     String::from_utf8_unchecked(
         MIXIN_KEY_REORDER_MAP
             .iter()
@@ -40,10 +41,13 @@ pub enum Error {
 
 pub const WBI_URI: &str = "https://api.bilibili.com/x/web-interface/nav";
 
-pub fn parse_wbi_keys(resp: &[u8]) -> Result<String, Error> {
+pub fn parse_wbi_keys(resp: impl AsRef<[u8]>) -> Result<String, Error> {
+    let resp = resp.as_ref();
     let formed_result: Nav = serde_json::from_slice(&resp)?;
     let WbiImg { img_url, sub_url } = formed_result.data.wbi_img;
-    let wbi_key = filename_in_url(&img_url).ok_or(Error::ParseError)?.to_owned()
+    let wbi_key = filename_in_url(&img_url)
+        .ok_or(Error::ParseError)?
+        .to_owned()
         + filename_in_url(&sub_url).ok_or(Error::ParseError)?;
     Ok(wbi_key)
 }
