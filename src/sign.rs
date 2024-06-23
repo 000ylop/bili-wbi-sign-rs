@@ -5,6 +5,9 @@ use itertools::Itertools;
 use md5::compute;
 use url::form_urlencoded;
 
+/// Encode params with your query pair and the `mixin_key`.
+///
+/// You will get new **ordered** query pair.
 pub fn wbi_sign_encode(
     mut params: HashMap<String, String>,
     mixin_key: &str,

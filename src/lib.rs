@@ -13,9 +13,13 @@ const MIXIN_KEY_REORDER_MAP: [usize; 64] = [
     54, 21, 56, 59, 6, 63, 57, 62, 11, 36, 20, 34, 44, 52,
 ];
 
+/// Once you got raw WBI key, you could call this function,
+///
+/// to get `mixin_key`.
+///
 /// SAFETY: key should be valid ASCII string
-pub unsafe fn mixin_key(key: impl AsRef<[u8]>) -> String {
-    let key = key.as_ref();
+pub unsafe fn mixin_key(raw_key: impl AsRef<[u8]>) -> String {
+    let key = raw_key.as_ref();
     String::from_utf8_unchecked(
         MIXIN_KEY_REORDER_MAP
             .iter()
@@ -33,8 +37,12 @@ pub enum Error {
     JsonError(#[from] serde_json::Error),
 }
 
+/// WBI params url
 pub const WBI_URI: &str = "https://api.bilibili.com/x/web-interface/nav";
 
+/// You should GET `WBI_URI`, and pass the response to this.
+///
+/// So you get the raw WBI key.
 pub fn parse_wbi_keys(resp: impl AsRef<[u8]>) -> Result<String, Error> {
     let resp = resp.as_ref();
     let formed_result: Nav = serde_json::from_slice(&resp)?;
@@ -47,7 +55,11 @@ pub fn parse_wbi_keys(resp: impl AsRef<[u8]>) -> Result<String, Error> {
 }
 
 #[cfg(feature = "expires_time")]
-/// after such duration, mixin_key will expire.
+/// After such duration, mixin_key will expire.
+///
+/// [`moka`]: https://docs.rs/moka/latest/moka/
+/// [usage]: https://github.com/mokurin000/yuanshen-workarounds-bot/blob/0551b3a5978ef0d9dd82fadb689304a5eb17b18a/src/expiry.rs#L5-L14
+/// See [usage] with [`moka`].
 pub fn expires_after() -> Option<chrono::Duration> {
     use chrono::prelude::*;
     let utc = Utc::now().naive_utc();
